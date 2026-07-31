@@ -4,13 +4,15 @@ import { connect } from 'cloudflare:sockets';
 
 // How to generate your own UUID:
 // [Windows] Press "Win + R", input cmd and run:  Powershell -NoExit -Command "[guid]::NewGuid()"
-let userID = 'd342d11e-d424-4583-b36e-524ab1f0afa4';
+let userID = '880c366d-5855-47b4-94e0-86d4b050df6d';
 
 const proxyIPs = ['cdn-all.xn--b6gac.eu.org', 'cdn.xn--b6gac.eu.org', 'cdn-b100.xn--b6gac.eu.org', 'edgetunnel.anycast.eu.org', 'cdn.anycast.eu.org'];
 
 let proxyIP = proxyIPs[Math.floor(Math.random() * proxyIPs.length)];
 
-let dohURL = 'https://sky.rethinkdns.com/1:-Pf_____9_8A_AMAIgE8kMABVDDmKOHTAKg='; // https://cloudflare-dns.com/dns-query or https://dns.google/dns-query
+let dohURL = 'https://dns.google/dns-query'; // https://cloudflare-dns.com/dns-query or https://dns.google/dns-query
+
+let wsPath = '/ws'; // WebSocket path, can be overridden by env.WS_PATH
 
 // v2board api environment variables (optional) deprecated, please use planetscale.com instead
 
@@ -21,7 +23,7 @@ if (!isValidUUID(userID)) {
 export default {
 	/**
 	 * @param {import("@cloudflare/workers-types").Request} request
-	 * @param {{UUID: string, PROXYIP: string, DNS_RESOLVER_URL: string, NODE_ID: int, API_HOST: string, API_TOKEN: string}} env
+	 * @param {{UUID: string, PROXYIP: string, DNS_RESOLVER_URL: string, WS_PATH: string, NODE_ID: int, API_HOST: string, API_TOKEN: string}} env
 	 * @param {import("@cloudflare/workers-types").ExecutionContext} ctx
 	 * @returns {Promise<Response>}
 	 */
@@ -31,6 +33,7 @@ export default {
 			userID = env.UUID || userID;
 			proxyIP = env.PROXYIP || proxyIP;
 			dohURL = env.DNS_RESOLVER_URL || dohURL;
+			wsPath = env.WS_PATH || wsPath;
 			// nodeId = env.NODE_ID || nodeId;
 			// apiToken = env.API_TOKEN || apiToken;
 			// apiHost = env.API_HOST || apiHost;
@@ -38,10 +41,15 @@ export default {
 			if (userID.includes(',')) {
 				userID_Path = userID.split(',')[0];
 			}
+			const url = new URL(request.url);
 			const upgradeHeader = request.headers.get('Upgrade');
-			if (!upgradeHeader || upgradeHeader !== 'websocket') {
-				const url = new URL(request.url);
-				switch (url.pathname) {
+			if (upgradeHeader === 'websocket') {
+				if (url.pathname === wsPath) {
+					return await vlessOverWSHandler(request);
+				}
+				return new Response('WebSocket path not found', { status: 404 });
+			}
+			switch (url.pathname) {
 					case '/cf':
 						return new Response(JSON.stringify(request.cf, null, 4), {
 							status: 200,
@@ -50,7 +58,7 @@ export default {
 							},
 						});
 					case `/${userID_Path}`: {
-						const vlessConfig = getVLESSConfig(userID, request.headers.get('Host'));
+						const vlessConfig = getVLESSConfig(userID, request.headers.get('Host'), wsPath);
 						return new Response(`${vlessConfig}`, {
 							status: 200,
 							headers: {
@@ -61,7 +69,7 @@ export default {
 					case `/sub/${userID_Path}`: {
 						const url = new URL(request.url);
 						const searchParams = url.searchParams;
-						let vlessConfig = createVLESSSub(userID, request.headers.get('Host'));
+						let vlessConfig = createVLESSSub(userID, request.headers.get('Host'), wsPath);
 
 						// If 'format' query param equals to 'clash', convert config to base64
 						if (searchParams.get('format') === 'clash') {
@@ -76,6 +84,8 @@ export default {
 							}
 						});
 					}
+					case wsPath:
+						return new Response('Not found', { status: 404 });
 					default:
 						// return new Response('Not found', { status: 404 });
 						// For any other path, reverse proxy to 'www.fmprc.gov.cn' and return the original response, caching it in the process
@@ -119,9 +129,6 @@ export default {
 						}
 						return response;
 				}
-			} else {
-				return await vlessOverWSHandler(request);
-			}
 		} catch (err) {
 			/** @type {Error} */ let e = err;
 			return new Response(e.toString());
@@ -712,8 +719,9 @@ async function handleUDPOutBound(webSocket, vlessResponseHeader, log) {
  * @param {string | null} hostName
  * @returns {string}
  */
-function getVLESSConfig(userIDs, hostName) {
-	const commonUrlPart = `:443?encryption=none&security=tls&sni=${hostName}&fp=randomized&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#${hostName}`;
+function getVLESSConfig(userIDs, hostName, wsPath) {
+	const encodedWsPath = encodeURIComponent(wsPath);
+	const commonUrlPart = `:443?encryption=none&security=tls&sni=${hostName}&fp=randomized&type=ws&host=${hostName}&path=%2F${encodedWsPath.slice(1)}%3Fed%3D2048#${hostName}`;
 	const separator = "---------------------------------------------------------------";
 	const hashSeparator = "################################################################";
 
@@ -822,7 +830,8 @@ function getVLESSConfig(userIDs, hostName) {
 }
 
 
-function createVLESSSub(userID_Path, hostName) {
+function createVLESSSub(userID_Path, hostName, wsPath) {
+	const encodedWsPath = encodeURIComponent(wsPath);
 	let portArray_http = [80, 8080, 8880, 2052, 2086, 2095, 2082];
 	let portArray_https = [443, 8443, 2053, 2096, 2087, 2083];
 
@@ -839,7 +848,7 @@ function createVLESSSub(userID_Path, hostName) {
 		if (!hostName.includes('pages.dev')) {
 			// Iterate over all ports for http
 			portArray_http.forEach((port) => {
-				const commonUrlPart_http = `:${port}?encryption=none&security=none&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#${hostName}-HTTP-${port}`;
+				const commonUrlPart_http = `:${port}?encryption=none&security=none&fp=random&type=ws&host=${hostName}&path=%2F${encodedWsPath.slice(1)}%3Fed%3D2048#${hostName}-HTTP-${port}`;
 				const vlessMainHttp = `vless://${userID}@${hostName}${commonUrlPart_http}`;
 
 				// For each proxy IP, generate a VLESS configuration and add to output
@@ -852,7 +861,7 @@ function createVLESSSub(userID_Path, hostName) {
 		}
 		// Iterate over all ports for https
 		portArray_https.forEach((port) => {
-			const commonUrlPart_https = `:${port}?encryption=none&security=tls&sni=${hostName}&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#${hostName}-HTTPS-${port}`;
+			const commonUrlPart_https = `:${port}?encryption=none&security=tls&sni=${hostName}&fp=random&type=ws&host=${hostName}&path=%2F${encodedWsPath.slice(1)}%3Fed%3D2048#${hostName}-HTTPS-${port}`;
 			const vlessMainHttps = `vless://${userID}@${hostName}${commonUrlPart_https}`;
 
 			// For each proxy IP, generate a VLESS configuration and add to output

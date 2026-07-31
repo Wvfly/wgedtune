@@ -1,110 +1,113 @@
 # EDtunnel
 
 <p align="center">
-  <img src="https://cloudflare-ipfs.com/ipfs/bafybeigd6i5aavwpr6wvnwuyayklq3omonggta4x2q7kpmgafj357nkcky" alt="图片描述" style="margin-bottom: -50px;">
+  <img src="https://cloudflare-ipfs.com/ipfs/bafybeigd6i5aavwpr6wvnwuyayklq3omonggta4x2q7kpmgafj357nkcky" alt="EDtunnel" style="margin-bottom: -50px;">
 </p>
 
-GitHub Repository for [https://github.com/zizifn/edgetunnel](https://github.com/zizifn/edgetunnel)
+VLESS over WebSocket proxy tunnel deployed on Cloudflare Workers. Based on [edgetunnel](https://github.com/zizifn/edgetunnel).
 
-[![Repository](https://img.shields.io/badge/View%20on-GitHub-blue.svg)](https://github.com/zizifn/edgetunnel)
+## Quick Deploy
 
-## Deploy in pages.dev
+### Deploy as Worker
 
-1. See YouTube Video:
+1. Clone this repository
+2. Update `wrangler.toml` with your configuration (UUID, WS_PATH, etc.)
+3. Run deploy command:
 
-   [https://www.youtube.com/watch?v=8I-yTNHB0aw](https://www.youtube.com/watch?v=8I-yTNHB0aw)
+```bash
+npx wrangler deploy
+```
 
-2. Clone this repository deploy in cloudflare pages.
-
-## Deploy in worker.dev
-
-1. Copy `_worker.js` code from [here](https://github.com/3Kmfi6HP/EDtunnel/blob/main/_worker.js).
-
-2. Alternatively, you can click the button below to deploy directly.
+4. Or click the button below to deploy directly:
 
    [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/3Kmfi6HP/EDtunnel)
 
-## Lazy to deploy
+## Current Deployment
 
-`aHR0cHM6Ly9vc3MudjJyYXlzZS5jb20vcHJveGllcy9kYXRhLzIwMjMtMDctMzAvRnJFS1lvQS50eHQ=` (free clash.meta subscribe config)
+- **Worker name**: `wgnew`
+- **Domain**: `https://wgnew.freedomuat.workers.dev`
+- **WebSocket path**: `/ws` (configurable via `WS_PATH` env variable)
 
-## UUID Setting (Optional)
+## Environment Variables
 
-1. When deploy in cloudflare pages, you can set uuid in `wrangler.toml` file. variable name is `UUID`. `wrangler.toml` file is also supported. (recommended) in case deploy in webpages, you can not set uuid in `wrangler.toml` file.
+All variables are configured in the `[vars]` section of `wrangler.toml`:
 
-2. When deploy in worker.dev, you can set uuid in `_worker.js` file. variable name is `userID`. `wrangler.toml` file is also supported. (recommended) in case deploy in webpages, you can not set uuid in `wrangler.toml` file. in this case, you can also set uuid in `UUID` enviroment variable.
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `UUID` | VLESS user ID, multiple UUIDs separated by comma | `880c366d-5855-47b4-94e0-86d4b050df6d` |
+| `WS_PATH` | WebSocket connection path | `/ws` |
+| `PROXYIP` | Proxy IP to bypass Cloudflare IP blocking | None |
+| `DNS_RESOLVER_URL` | DoH resolver URL | `https://dns.google/dns-query` |
 
-note: `UUID` is the uuid you want to set. pages.dev and worker.dev all of them method supported, but depend on your deploy method.
+### UUID Configuration
 
-### UUID Setting Example
+Single UUID:
 
-1. single uuid environment variable
+```toml
+UUID = "your-uuid-here"
+```
 
-   ```.environment
-   UUID = "uuid here your want to set"
-   ```
+Multiple UUIDs (comma-separated):
 
-2. multiple uuid environment variable
+```toml
+UUID = "uuid1,uuid2,uuid3"
+```
 
-   ```.environment
-   UUID = "uuid1,uuid2,uuid3"
-   ```
+> Note: When using multiple UUIDs, the subscription link only uses the first UUID.
 
-   note: uuid1, uuid2, uuid3 are separated by commas`,`.
-   when you set multiple uuid, you can will use `https://edtunnel.pages.dev/uuid1` to get the clash config and vless:// link.
+## Access Paths
 
-## subscribe vless:// link (Optional)
+| Path | Description |
+|------|-------------|
+| `/ws` | WebSocket VLESS proxy (WebSocket upgrade requests only) |
+| `/{UUID}` | VLESS configuration page with vless:// links |
+| `/sub/{UUID}` | Subscription link (vless:// format) |
+| `/sub/{UUID}?format=clash` | Clash format subscription (base64 encoded) |
+| `/cf` | Cloudflare request information |
+| Other paths | Disguised reverse proxy |
 
-1. visit `https://edtunnel.pages.dev/uuid your set` to get the subscribe link.
+## Subscription Links
 
-2. visit `https://edtunnel.pages.dev/sub/uuid your set` to get the subscribe content with `uuid your set` path.
+- **VLESS**: `https://wgnew.freedomuat.workers.dev/sub/880c366d-5855-47b4-94e0-86d4b050df6d`
+- **Clash**: `https://wgnew.freedomuat.workers.dev/sub/880c366d-5855-47b4-94e0-86d4b050df6d?format=clash`
+- **Config page**: `https://wgnew.freedomuat.workers.dev/880c366d-5855-47b4-94e0-86d4b050df6d`
 
-   note: `uuid your set` is the uuid you set in UUID enviroment or `wrangler.toml`, `_worker.js` file.
-   when you set multiple uuid, you can will use `https://edtunnel.pages.dev/sub/uuid1` to get the subscribe content with `uuid1` path.(only support first uuid in multiple uuid set)
+## VLESS Node Link
 
-3. visit `https://edtunnel.pages.dev/sub/uuid your set/?format=clash` to get the subscribe content with `uuid your set` path and `clash` format. content will return with base64 encode.
+```
+vless://880c366d-5855-47b4-94e0-86d4b050df6d@wgnew.freedomuat.workers.dev:443?encryption=none&security=tls&sni=wgnew.freedomuat.workers.dev&fp=randomized&type=ws&host=wgnew.freedomuat.workers.dev&path=%2Fws%3Fed%3D2048#wgnew
+```
 
-   note: `uuid your set` is the uuid you set in UUID enviroment or `wrangler.toml`, `_worker.js` file.
-   when you set multiple uuid, you can will use `https://edtunnel.pages.dev/sub/uuid1/?format=clash` to get the subscribe content with `uuid1` path and `clash` format.(only support first uuid in multiple uuid set)
-
-## multiple port support (Optional)
-
-   <!-- let portArray_http = [80, 8080, 8880, 2052, 2086, 2095];
-	let portArray_https = [443, 8443, 2053, 2096, 2087, 2083]; -->
+## Supported Ports
 
 For a list of Cloudflare supported ports, please refer to the [official documentation](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/ports).
 
-By default, the port is 80 and 443. If you want to add more ports, you can use the following ports:
-
 ```text
-80, 8080, 8880, 2052, 2086, 2095, 443, 8443, 2053, 2096, 2087, 2083
-http port: 80, 8080, 8880, 2052, 2086, 2095
-https port: 443, 8443, 2053, 2096, 2087, 2083
+HTTP ports:  80, 8080, 8880, 2052, 2086, 2095
+HTTPS ports: 443, 8443, 2053, 2096, 2087, 2083
 ```
-
-if you deploy in cloudflare pages, https port is not supported. Simply add multiple ports node drictly use subscribe link, subscribe content will return all Cloudflare supported ports.
 
 ## proxyIP (Optional)
 
-1. When deploy in cloudflare pages, you can set proxyIP in `wrangler.toml` file. variable name is `PROXYIP`.
+Set `PROXYIP` in `wrangler.toml`:
 
-2. When deploy in worker.dev, you can set proxyIP in `_worker.js` file. variable name is `proxyIP`.
+```toml
+PROXYIP = "your-proxy-ip-or-domain"
+```
 
-note: `proxyIP` is the ip or domain you want to set. this means that the proxyIP is used to route traffic through a proxy rather than directly to a website that is using Cloudflare's (CDN). if you don't set this variable, connection to the Cloudflare IP will be cancelled (or blocked)...
+`proxyIP` is used to route traffic through a proxy rather than directly to a website using Cloudflare's CDN. If not set, connections to Cloudflare IPs may be blocked.
 
-resons: Outbound TCP sockets to Cloudflare IP ranges are temporarily blocked, please refer to the [tcp-sockets documentation](https://developers.cloudflare.com/workers/runtime-apis/tcp-sockets/#considerations)
+Reason: Outbound TCP sockets to Cloudflare IP ranges are temporarily blocked, see [tcp-sockets documentation](https://developers.cloudflare.com/workers/runtime-apis/tcp-sockets/#considerations).
 
-## Usage
+## Local Development
 
-frist, open your pages.dev domain `https://edtunnel.pages.dev/` in your browser, then you can see the following page:
-The path `/uuid your seetting` to get the clash config and vless:// link.
+```bash
+npm install
+npx wrangler dev
+```
 
-## Star History
+The local server listens on `http://127.0.0.1:8787`.
 
-<a href="https://star-history.com/#3Kmfi6HP/EDtunnel&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=3Kmfi6HP/EDtunnel&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=3Kmfi6HP/EDtunnel&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=3Kmfi6HP/EDtunnel&type=Date" />
-  </picture>
-</a>
+## DNS Resolution
+
+This project uses DoH (DNS over HTTPS) for DNS resolution, defaulting to Google DNS (`https://dns.google/dns-query`). You can change it via the `DNS_RESOLVER_URL` environment variable. DoH encrypts DNS queries via HTTPS, effectively preventing DNS pollution.

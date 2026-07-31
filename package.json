@@ -6,12 +6,12 @@
     "scripts": {
         "deploy": "wrangler deploy",
         "build": "wrangler deploy --dry-run --outdir=minify --minify",
-        "dev": "wrangler dev --remote"
+        "dev": "wrangler dev"
     },
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "@cloudflare/workers-types": "^4.20230710.1",
-        "wrangler": "^3.2.0"
+        "@cloudflare/workers-types": "^5.20260722.1",
+        "wrangler": "^4.16.2"
     }
 }
