@@ -24,8 +24,8 @@ npx wrangler deploy
 
 ## Current Deployment
 
-- **Worker name**: `wgnew`
-- **Domain**: `https://wgnew.freedomuat.workers.dev`
+- **Worker name**: `your-worker-name`
+- **Domain**: `https://your-worker-name.workers.dev`
 - **WebSocket path**: `/ws` (configurable via `WS_PATH` env variable)
 
 ## Environment Variables
@@ -68,14 +68,14 @@ UUID = "uuid1,uuid2,uuid3"
 
 ## Subscription Links
 
-- **VLESS**: `https://wgnew.freedomuat.workers.dev/sub/880c366d-5855-47b4-94e0-86d4b050df6d`
-- **Clash**: `https://wgnew.freedomuat.workers.dev/sub/880c366d-5855-47b4-94e0-86d4b050df6d?format=clash`
-- **Config page**: `https://wgnew.freedomuat.workers.dev/880c366d-5855-47b4-94e0-86d4b050df6d`
+- **VLESS**: `https://your-worker-name.workers.dev/sub/880c366d-5855-47b4-94e0-86d4b050df6d`
+- **Clash**: `https://your-worker-name.workers.dev/sub/880c366d-5855-47b4-94e0-86d4b050df6d?format=clash`
+- **Config page**: `https://your-worker-name.workers.dev/880c366d-5855-47b4-94e0-86d4b050df6d`
 
 ## VLESS Node Link
 
 ```
-vless://880c366d-5855-47b4-94e0-86d4b050df6d@wgnew.freedomuat.workers.dev:443?encryption=none&security=tls&sni=wgnew.freedomuat.workers.dev&fp=randomized&type=ws&host=wgnew.freedomuat.workers.dev&path=%2Fws%3Fed%3D2048#wgnew
+vless://880c366d-5855-47b4-94e0-86d4b050df6d@your-worker-name.workers.dev:443?encryption=none&security=tls&sni=your-worker-name.workers.dev&fp=randomized&type=ws&host=your-worker-name.workers.dev&path=%2Fws%3Fed%3D2048#your-worker-name
 ```
 
 ## Supported Ports
